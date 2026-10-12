@@ -1,0 +1,19 @@
+#!/bin/bash
+set -euo pipefail
+# Run from project root:  ./scripts/run_tests.sh [num_tests]
+N=${1:-10}
+
+./scripts/encode_assembly.sh test/convolution.asm test/program.hex
+(cd test && python3 generator.py "$N" --seed 1)
+./scripts/build.sh
+
+pass=0
+for ((x=0; x<N; x++)); do
+    vvp convolution_testbench +X=$x > /dev/null
+    if diff -q test_result.out test/output/test$x.out > /dev/null; then
+        pass=$((pass+1))
+    else
+        echo "FAIL: test $x"
+    fi
+done
+echo "Passed $pass / $N"
