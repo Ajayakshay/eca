@@ -95,6 +95,7 @@ module CustomCore#(
     reg [4:0]    id_ex_rs1, id_ex_rs2;
     reg          id_ex_reg_write, id_ex_mem_write, id_ex_alu_src, id_ex_is_branch, id_ex_is_jalr;
     reg [1:0]    id_ex_alu_op;
+    reg [2:0]    id_ex_funct3;
 
     always @(posedge clock) begin
         if (reset || redirect || stall) begin        // insert bubble (control only)
@@ -110,6 +111,7 @@ module CustomCore#(
             id_ex_rs1_val <= id_rs1_val; id_ex_rs2_val <= id_rs2_val; id_ex_imm <= id_imm;
             id_ex_rs1 <= id_rs1; id_ex_rs2 <= id_rs2; id_ex_rd <= id_rd;
             id_ex_alu_src <= id_alu_src; id_ex_alu_op <= id_alu_op;
+            id_ex_funct3 <= if_id_instr[14:12];
         end
     end
 
@@ -134,7 +136,20 @@ module CustomCore#(
 
     alu #(.W(W)) u_alu (.a(rs1_fwd), .b(alu_b), .op(id_ex_alu_op), .result(alu_result));
 
-    wire branch_taken = id_ex_is_branch && ($signed(rs1_fwd) < $signed(rs2_fwd));   // blt
+    reg branch_cond;
+    always @* begin
+        case (id_ex_funct3)
+        3'b000: branch_cond = (rs1_fwd == rs2_fwd);//beq
+        3'b001: branch_cond = (rs1_fwd != rs2_fwd);//bne
+        3'b010: branch_cond = ($signed(rs1_fwd) < $signed(rs2_fwd) );//blt
+        3'b011: branch_cond = ($signed(rs1_fwd) >= $signed(rs2_fwd));//bge
+        3'b100: branch_cond = (rs1_fwd < rs2_fwd);//bltu
+        3'b101: branch_cond = (rs1_fwd >= rs2_fwd);//bgeu
+        default: branch_cond = 1'b0;
+        endcase
+    end
+    wire branch_taken = id_ex_is_branch && branch_cond;
+
     wire [IW-1:0] branch_target = id_ex_pc + id_ex_imm[IW+1:2];
     wire [IW-1:0] jalr_target   = alu_result[IW+1:2];
 
