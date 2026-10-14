@@ -58,7 +58,7 @@ module CustomCore#(
     wire [4:0] id_rs2 = if_id_instr[24:20];
     wire [4:0] id_rd  = if_id_instr[11:7];
 
-    wire id_reg_write, id_mem_read, id_mem_write, id_alu_src, id_is_branch, id_is_jalr;
+    wire id_reg_write, id_mem_read, id_mem_write, id_alu_src, id_is_branch, id_is_jalr, id_is_jal;
     wire id_uses_rs1, id_uses_rs2;
     wire [1:0] id_alu_op;
     wire [W-1:0] id_imm;
@@ -67,7 +67,7 @@ module CustomCore#(
         .instr(if_id_instr), .reg_write(id_reg_write), .mem_read(id_mem_read),
         .mem_write(id_mem_write), .alu_src_imm(id_alu_src), .is_branch(id_is_branch),
         .is_jalr(id_is_jalr), .uses_rs1(id_uses_rs1), .uses_rs2(id_uses_rs2),
-        .alu_op(id_alu_op), .imm(id_imm)
+        .alu_op(id_alu_op), .imm(id_imm), .is_jal(id_is_jal)
     );
 
     wire [W-1:0] id_rs1_val, id_rs2_val;
@@ -93,18 +93,19 @@ module CustomCore#(
     reg [IW-1:0] id_ex_pc;
     reg [W-1:0]  id_ex_rs1_val, id_ex_rs2_val, id_ex_imm;
     reg [4:0]    id_ex_rs1, id_ex_rs2;
-    reg          id_ex_reg_write, id_ex_mem_write, id_ex_alu_src, id_ex_is_branch, id_ex_is_jalr;
+    reg          id_ex_reg_write, id_ex_mem_write, id_ex_alu_src, id_ex_is_branch, id_ex_is_jalr, id_ex_is_jal;
     reg [1:0]    id_ex_alu_op;
     reg [2:0]    id_ex_funct3;
 
     always @(posedge clock) begin
         if (reset || redirect || stall) begin        // insert bubble (control only)
             id_ex_reg_write <= 0; id_ex_mem_read <= 0; id_ex_mem_write <= 0;
-            id_ex_is_branch <= 0; id_ex_is_jalr  <= 0;
+            id_ex_is_branch <= 0; id_ex_is_jalr  <= 0; id_ex_is_jal <= 0;
         end else begin
             id_ex_reg_write <= id_reg_write; id_ex_mem_read <= id_mem_read;
             id_ex_mem_write <= id_mem_write; id_ex_is_branch <= id_is_branch;
             id_ex_is_jalr   <= id_is_jalr;
+            id_ex_is_jal   <= id_is_jal;
         end
         if (!stall) begin
             id_ex_pc <= if_id_pc;
@@ -153,11 +154,11 @@ module CustomCore#(
     wire [IW-1:0] branch_target = id_ex_pc + id_ex_imm[IW+1:2];
     wire [IW-1:0] jalr_target   = alu_result[IW+1:2];
 
-    assign redirect        = branch_taken | id_ex_is_jalr;
+    assign redirect        = branch_taken | id_ex_is_jal | id_ex_is_jalr;
     assign redirect_target = id_ex_is_jalr ? jalr_target : branch_target;
 
     wire [W-1:0] link   = {{(W-IW-2){1'b0}}, id_ex_pc + 1'b1, 2'b00};
-    wire [W-1:0] ex_res = id_ex_is_jalr ? link : alu_result;
+    wire [W-1:0] ex_res = (id_ex_is_jalr | id_ex_is_jal) ? link : alu_result;
 
     // ret to address 0 => program done
     always @(posedge clock) begin
