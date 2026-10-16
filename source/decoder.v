@@ -48,12 +48,22 @@ module decoder #(parameter W = 32)(
         is_jal = 0;
         case (opcode)
             OP_IMM: begin
-                reg_write = 1; uses_rs1 = 1; alu_src_imm = 1;
-                if (funct3 == 3'b001) alu_op = 2'd1;                  // slli
+                if (funct3 == 3'b000) begin                          // addi
+                    reg_write = 1; uses_rs1 = 1; alu_src_imm = 1;
+                end else if (funct3 == 3'b001 && funct7 == 7'b0) begin  // slli
+                    reg_write = 1; uses_rs1 = 1; alu_src_imm = 1; alu_op = 3'd1;
+                end
             end
             OP: begin
-                reg_write = 1; uses_rs1 = 1; uses_rs2 = 1;
-                if (funct7 == 7'b0000001) alu_op = 2'd2;              // mul
+                if(funct3 == 3'b000) begin
+                    if(funct7 == 7'b0000000) begin
+                        reg_write = 1; uses_rs1 = 1; uses_rs2 = 1;
+                    end else if(funct7 == 7'b0100000) begin
+                        reg_write = 1; uses_rs1 = 1; uses_rs2 = 1; alu_op = 3'd3;
+                    end else if(funct7 == 7'b0000001) begin
+                        reg_write = 1; uses_rs1 = 1; uses_rs2 = 1; alu_op = 3'd2;
+                    end          
+                end
             end
             LOAD: begin
                 reg_write = 1; mem_read = 1; uses_rs1 = 1; alu_src_imm = 1;
@@ -72,6 +82,10 @@ module decoder #(parameter W = 32)(
             JAL: begin
                 reg_write = 1; is_jal = 1;
                 imm = {{(W-21){instr[31]}}, instr[31], instr[19:12],instr[20],instr[30:21], 1'b0};
+            end
+            LUI: begin                                               // lui
+                reg_write = 1; alu_src_imm = 1; alu_op = 3'd4;
+                imm = {instr[31:12], 12'b0};
             end
             default: ;   // bubble / unknown = no-op
         endcase

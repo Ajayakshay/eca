@@ -142,10 +142,10 @@ module CustomCore#(
         case (id_ex_funct3)
         3'b000: branch_cond = (rs1_fwd == rs2_fwd);//beq
         3'b001: branch_cond = (rs1_fwd != rs2_fwd);//bne
-        3'b010: branch_cond = ($signed(rs1_fwd) < $signed(rs2_fwd) );//blt
-        3'b011: branch_cond = ($signed(rs1_fwd) >= $signed(rs2_fwd));//bge
-        3'b100: branch_cond = (rs1_fwd < rs2_fwd);//bltu
-        3'b101: branch_cond = (rs1_fwd >= rs2_fwd);//bgeu
+        3'b100: branch_cond = ($signed(rs1_fwd) < $signed(rs2_fwd) );//blt
+        3'b101: branch_cond = ($signed(rs1_fwd) >= $signed(rs2_fwd));//bge
+        3'b110: branch_cond = (rs1_fwd < rs2_fwd);//bltu
+        3'b111: branch_cond = (rs1_fwd >= rs2_fwd);//bgeu
         default: branch_cond = 1'b0;
         endcase
     end
