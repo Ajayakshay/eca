@@ -29,13 +29,13 @@ module decoder #(parameter W = 32)(
     output reg          is_jalr,
     output reg          uses_rs1,
     output reg          uses_rs2,
-    output reg  [1:0]   alu_op,
+    output reg  [2:0]   alu_op,
     output reg  [W-1:0] imm,
     output reg          is_jal
 );
     localparam OP_IMM = 7'b0010011, OP = 7'b0110011, LOAD = 7'b0000011,
                STORE  = 7'b0100011, BRANCH = 7'b1100011, JALR = 7'b1100111,
-               JAL    = 7'b1101111;
+               JAL    = 7'b1101111, LUI = 7'b0110111;
     wire [6:0] opcode = instr[6:0];
     wire [2:0] funct3 = instr[14:12];
     wire [6:0] funct7 = instr[31:25];
@@ -43,7 +43,7 @@ module decoder #(parameter W = 32)(
     always @* begin
 
         reg_write = 0; mem_read = 0; mem_write = 0; alu_src_imm = 0;
-        is_branch = 0; is_jalr = 0; uses_rs1 = 0; uses_rs2 = 0; alu_op = 2'd0;
+        is_branch = 0; is_jalr = 0; uses_rs1 = 0; uses_rs2 = 0; alu_op = 3'd0;
         imm = {{(W-12){instr[31]}}, instr[31:20]};                    // I-type
         is_jal = 0;
         case (opcode)

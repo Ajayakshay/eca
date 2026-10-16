@@ -60,7 +60,7 @@ module CustomCore#(
 
     wire id_reg_write, id_mem_read, id_mem_write, id_alu_src, id_is_branch, id_is_jalr, id_is_jal;
     wire id_uses_rs1, id_uses_rs2;
-    wire [1:0] id_alu_op;
+    wire [2:0] id_alu_op;
     wire [W-1:0] id_imm;
 
     decoder #(.W(W)) u_dec (
@@ -94,7 +94,7 @@ module CustomCore#(
     reg [W-1:0]  id_ex_rs1_val, id_ex_rs2_val, id_ex_imm;
     reg [4:0]    id_ex_rs1, id_ex_rs2;
     reg          id_ex_reg_write, id_ex_mem_write, id_ex_alu_src, id_ex_is_branch, id_ex_is_jalr, id_ex_is_jal;
-    reg [1:0]    id_ex_alu_op;
+    reg [2:0]    id_ex_alu_op;
     reg [2:0]    id_ex_funct3;
 
     always @(posedge clock) begin
